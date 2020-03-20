@@ -17,6 +17,7 @@ from .restore import RestoreCsvLoader
 from .transfer import TransferCsvLoader
 from .utils import print_header
 from .progress_notifier import PrintProgressNotifier
+from .restores_duplicate_files_md5_checksums import find_restore_duplicate_files_with_md5_checksums
 
 
 def get_args():
@@ -186,6 +187,17 @@ def get_args():
         help='The (optional) file to write the unmatched accessions to in CSV format. Defaults to standard out.'
         )
 
+    # create the parser for the "load_accessions" command
+    find_restore_duplicate_files_with_md5_checksums_subcommand = subparsers.add_parser(
+        'find_restore_duplicate_files_with_md5_checksums',
+        help='Find restore duplicates files with md5 checksum'
+    )
+    find_restore_duplicate_files_with_md5_checksums_subcommand.add_argument(
+        '-s', '--source',
+        action='store',
+        help='Source of filenames to check'
+    )
+
     return parser.parse_args()
 
 
@@ -268,6 +280,9 @@ def main():
         result = unmatched_accessions_command(args.batch, args.output, args.delete)
         print("----- Unmatched Accessions ----")
         print(result)
+    elif args.cmd == "find_restore_duplicate_files_with_md5_checksums":
+        use_database_file(args.database)
+        find_restore_duplicate_files_with_md5_checksums(args.source)
 
     print(f"Actions complete!")
     if args.database == ':memory:':
