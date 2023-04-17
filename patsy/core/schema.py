@@ -15,7 +15,10 @@ class Schema:
         # Create "patsy_records" view
         with engine.connect() as con:
             con.execute("DROP VIEW IF EXISTS patsy_records;")
-            con.execute("""
+            con.execute(Schema.get_patsy_records_view_schema())
+
+    def get_patsy_records_view_schema():
+        return """
                 CREATE VIEW patsy_records AS
                     SELECT
                         batches.id as "batch_id",
@@ -30,11 +33,11 @@ class Schema:
                         accessions.sha1,
                         accessions.sha256,
                         locations.id as "location_id",
-                        locations.storage_provider,
-                        locations.storage_location
+                        locations_type.storage_provider
                         FROM batches
                         LEFT JOIN accessions ON batches.id = accessions.batch_id
                         LEFT JOIN accession_locations ON accessions.id = accession_locations.accession_id
                         LEFT JOIN locations ON accession_locations.location_id = locations.id
+                        LEFT JOIN locations_type ON locations_type.id = locations.storage_provider_id
                         ORDER BY batches.id
-            """)
+               """
