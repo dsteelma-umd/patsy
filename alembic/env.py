@@ -7,6 +7,7 @@ from alembic import context
 
 # UMD Customization
 from patsy.database import get_database_connection_url
+from patsy.model import Base
 # End UMD Customization
 
 # this is the Alembic Config object, which provides
@@ -22,7 +23,10 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = None
+# UMD Customization
+# target_metadata = None
+target_metadata = Base.metadata
+# End UMD Customization
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
