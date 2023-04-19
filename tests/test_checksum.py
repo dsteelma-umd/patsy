@@ -2,14 +2,10 @@ import tempfile
 import pytest
 import os
 
-from patsy.commands.schema import Command as CommandSchema
 from patsy.commands.checksum import Command, get_checksum
-from sqlalchemy.ext.compiler import compiles
-from patsy.core.db_gateway import DbGateway
-from sqlalchemy.schema import DropTable
 from patsy.core.load import Load
 from argparse import Namespace
-from patsy.model import Base
+from tests import clear_database, init_database
 
 
 @pytest.fixture
@@ -17,20 +13,8 @@ def addr(request):
     return request.config.getoption('--base-url')
 
 
-@compiles(DropTable, "postgresql")
-def _compile_drop_table(element, compiler, **kwargs):
-    return compiler.visit_drop_table(element) + " CASCADE"
-
-
-def tearDown(obj):
-    obj.gateway.close()
-    Base.metadata.drop_all(obj.gateway.session.get_bind())
-
-
 def setUp(obj, addr):
-    args = Namespace()
-    args.database = addr
-    obj.gateway = DbGateway(args)
+    obj = init_database(obj, addr)
 
     # Arguments passed to checksum.Command
     obj.checksum_command = Command()
@@ -39,10 +23,13 @@ def setUp(obj, addr):
     obj.command_args.output_type = None
     obj.command_args.output_file = None
 
-    CommandSchema.__call__(obj, args, obj.gateway)
     obj.load = Load(obj.gateway)
     csv_file = 'tests/fixtures/load/colors_inventory-aws-archiver.csv'
     obj.load.process_file(csv_file)
+
+
+def tearDown(obj):
+    clear_database(obj)
 
 
 class TestChecksumCommand:

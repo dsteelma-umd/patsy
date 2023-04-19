@@ -2,41 +2,25 @@ import csv
 import pytest
 
 from argparse import Namespace
-from patsy.commands.schema import Command
 from patsy.commands.load import Command as LoadCommand
-from patsy.core.db_gateway import DbGateway
 from patsy.core.patsy_record import PatsyUtils
-from patsy.model import Base
-from sqlalchemy.schema import DropTable
-from sqlalchemy.ext.compiler import compiles
+from tests import clear_database, init_database
 
-
-# pytestmark = pytest.mark.parametrize(
-#     "addr", [":memory"]  # , "postgresql+psycopg2://postgres:password@localhost:5432/postgres"]
-# )
 
 @pytest.fixture
 def addr(request):
     return request.config.getoption('--base-url')
 
 
-@compiles(DropTable, "postgresql")
-def _compile_drop_table(element, compiler, **kwargs):
-    return compiler.visit_drop_table(element) + " CASCADE"
-
-
 def setUp(obj, addr):
+    args = Namespace()
+    obj = init_database(obj, addr, args)
+
     test_db_files = [
         "tests/fixtures/db_gateway/colors_inventory.csv",
         "tests/fixtures/db_gateway/solar_system_inventory.csv"
     ]
 
-    args = Namespace()
-    args.database = addr
-    obj.gateway = DbGateway(args)
-    # schema = Schema(obj.gateway)
-    # schema.create_schema()
-    Command.__call__(obj, args, obj.gateway)
     for file in test_db_files:
         args.file = file
         LoadCommand.__call__(obj, args, obj.gateway)
@@ -45,8 +29,7 @@ def setUp(obj, addr):
 
 
 def tearDown(obj):
-    obj.gateway.close()
-    Base.metadata.drop_all(obj.gateway.session.get_bind())
+    clear_database(obj)
 
 
 class TestDbGateway:

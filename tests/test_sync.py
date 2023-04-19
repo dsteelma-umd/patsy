@@ -7,21 +7,13 @@ from argparse import Namespace
 from patsy.core.sync import Sync
 from patsy.core.load import Load
 from patsy.model import Base, Accession
-from patsy.commands.schema import Command
 from patsy.core.db_gateway import DbGateway
-
-from sqlalchemy.schema import DropTable
-from sqlalchemy.ext.compiler import compiles
+from tests import init_database, clear_database
 
 
 @pytest.fixture
 def addr(request):
     return request.config.getoption('--base-url')
-
-
-@compiles(DropTable, "postgresql")
-def _compile_drop_table(element, compiler, **kwargs):
-    return compiler.visit_drop_table(element) + " CASCADE"
 
 
 def setUp(obj, addr, csv_file: str = 'tests/fixtures/sync/Archive149.csv', load: bool = False, head: bool = False):
@@ -43,16 +35,14 @@ def setUp(obj, addr, csv_file: str = 'tests/fixtures/sync/Archive149.csv', load:
 
     if load:
         Base.metadata.drop_all(obj.gateway.session.get_bind())
-        Command.__call__(obj, args, obj.gateway)
+        obj = init_database(obj, addr, args)
         obj.load = Load(obj.gateway)
         obj.load.process_file(csv_file)
         obj.gateway.session.commit()
 
 
-def tearDown(obj, tear: bool = True):
-    obj.gateway.close()
-    if tear:
-        Base.metadata.drop_all(obj.gateway.session.get_bind())
+def tearDown(obj):
+    clear_database(obj)
 
 
 class TestSync:
