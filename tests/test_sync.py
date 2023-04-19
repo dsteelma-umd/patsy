@@ -6,7 +6,7 @@ import httpretty
 from argparse import Namespace
 from patsy.core.sync import Sync
 from patsy.core.load import Load
-from patsy.model import Base, Accession
+from patsy.model import Base, Accession, StorageProvider, Location
 from patsy.core.db_gateway import DbGateway
 from tests import init_database, clear_database
 
@@ -38,6 +38,10 @@ def setUp(obj, addr, csv_file: str = 'tests/fixtures/sync/Archive149.csv', load:
         obj = init_database(obj, addr, args)
         obj.load = Load(obj.gateway)
         obj.load.process_file(csv_file)
+
+        # Ensure that "APTrust" storage provider exists
+        obj.gateway.session.add(StorageProvider(storage_provider="APTrust"))
+
         obj.gateway.session.commit()
 
 

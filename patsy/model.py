@@ -94,7 +94,7 @@ class Location(Base):  # type: ignore
     __tablename__ = "locations"
 
     id = Column(Integer, primary_key=True)
-    storage_provider = Column(String)
+    storage_provider = relationship("StorageProvider")
     storage_location = Column(String)
     accessions = relationship("Accession", secondary=accession_locations_table, back_populates="locations")
     storage_provider_id = Column(Integer, ForeignKey('storage_providers.id'))
@@ -104,32 +104,4 @@ class Location(Base):  # type: ignore
                f"storage_location='{self.storage_location}'>"
 
 
-Index('location_storage', Location.storage_provider, Location.storage_location, unique=True)
-
-
-def patsy_records_view_sql() -> str:
-    """Returns the SQL command that creates the "patsy_records" view"""
-
-    return """
-        CREATE VIEW patsy_records AS
-            SELECT
-                batches.id as "batch_id",
-                batches.name as "batch_name",
-                accessions.id as "accession_id",
-                accessions.relpath,
-                accessions.filename,
-                accessions.extension,
-                accessions.bytes,
-                accessions.timestamp,
-                accessions.md5,
-                accessions.sha1,
-                accessions.sha256,
-                locations.id as "location_id",
-                locations.storage_provider,
-                locations.storage_location
-                FROM batches
-                LEFT JOIN accessions ON batches.id = accessions.batch_id
-                LEFT JOIN accession_locations ON accessions.id = accession_locations.accession_id
-                LEFT JOIN locations ON accession_locations.location_id = locations.id
-                ORDER BY batches.id
-    """
+Index('location_storage', Location.storage_provider_id, Location.storage_location, unique=True)

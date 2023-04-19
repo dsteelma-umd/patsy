@@ -21,15 +21,28 @@ Create Date: 2023-04-19 11:58:42.683509
 
 """
 from alembic import op
+from patsy.alembic.patsy_record_views_sql import patsy_records_view_select
 import sqlalchemy as sa
+from patsy.alembic.helpers.replaceable_objects import ReplaceableObject
 from sqlalchemy.engine.reflection import Inspector
-from patsy.model import patsy_records_view_sql
 
 # revision identifiers, used by Alembic.
 revision = '7da0ed6568f0'
 down_revision = None
 branch_labels = None
 depends_on = None
+
+
+# Implementation "patsy_records" View as replaceable object, so that it
+# can be easily changed in subsequent migrations (see
+# https://alembic.sqlalchemy.org/en/latest/cookbook.html#replaceable-objects)
+#
+# Different versions of the "patsy_records" SQL are stored in
+# "patsy/alembic/patsy_record_views_sql.py"
+patsy_records_view = ReplaceableObject(
+    "patsy_records",
+    patsy_records_view_select['v1']
+)
 
 
 def upgrade() -> None:
@@ -128,12 +141,12 @@ def upgrade() -> None:
     if not foreign_key_exists('accessions', u'fk_accessions_batch_id_batches'):
         op.create_foreign_key(op.f('fk_accessions_batch_id_batches'), 'accessions', 'batches', ['batch_id'], ['id'])
 
-    # Create the "patsy_records" View
-    create_patsy_records_view()
+    op.execute("DROP VIEW IF EXISTS patsy_records;")
+    op.create_view(patsy_records_view)
 
 
 def downgrade() -> None:
-    drop_patsy_records_view()
+    op.drop_view(patsy_records_view)
     op.drop_index('accession_locations_location_id', table_name='accession_locations')
     op.drop_index('accession_locations_accession_id', table_name='accession_locations')
     op.drop_table('accession_locations')
@@ -177,14 +190,3 @@ def foreign_key_exists(table_name, foreign_key_name):
             return True
 
     return False
-
-
-def create_patsy_records_view() -> None:
-    """Drops and recreates the "patsy_records" View"""
-    drop_patsy_records_view()
-    op.execute(patsy_records_view_sql())
-
-
-def drop_patsy_records_view() -> None:
-    """Drops the "patsy_records" View"""
-    op.execute("DROP VIEW IF EXISTS patsy_records;")

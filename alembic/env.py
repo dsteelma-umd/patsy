@@ -6,6 +6,7 @@ from sqlalchemy import pool
 from alembic import context
 
 # UMD Customization
+from patsy.alembic.helpers.replaceable_objects import *
 from patsy.database import get_database_connection_url
 from patsy.model import Base
 # End UMD Customization
